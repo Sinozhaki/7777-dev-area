@@ -100,20 +100,10 @@
         }
         .admin-view input::placeholder, .admin-view textarea::placeholder { color: #A0AEC0; }
         .admin-view label { color: #4A5568; }
-
-        #password-prompt-overlay {
-            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
-            background-color: rgba(247, 249, 252, 0.8);
-            backdrop-filter: blur(10px); z-index: 10; display: flex; flex-direction: column; 
-            justify-content: center; align-items: center; border-radius: 24px; padding: 2rem;
-        }
-        .password-prompt-box {
-            background: #FFFFFF; border: 1px solid #E2E8F0;
-            padding: 2rem; border-radius: 16px; width: 100%; max-width: 320px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-        }
-        #password-error {
-            margin-top: 0.5rem; color: #E53E3E; font-size: 0.875rem; height: 1.25rem;
+        .admin-view input:read-only, .admin-view select:disabled {
+            background-color: #E2E8F0;
+            cursor: not-allowed;
+            opacity: 0.7;
         }
 
         .admin-table th { background-color: #F1F5F9; color: #4A5568; border-bottom: 1px solid #E2E8F0; padding: 0.75rem 0.5rem; }
@@ -169,9 +159,7 @@
                     </div>
                     <div>
                         <label for="referral" class="block mb-2 text-sm font-medium">Referral</label>
-                        <select id="referral" class="text-sm rounded-lg block w-full p-2.5">
-                            <option>goongranca@gmail.com</option> <option>Reff 1</option> <option>Reff 2</option> <option>Reff 3</option>
-                        </select>
+                        <input type="text" id="referral" class="text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="Email atau ID referral" required>
                     </div>
                     <div>
                         <label for="kategori" class="block mb-2 text-sm font-medium">Kategori Akun</label>
@@ -232,9 +220,21 @@
         </div>
     </div>
 
+    <!-- Modal Konfirmasi Hapus -->
+    <div id="confirm-modal-overlay" class="hidden fixed inset-0 bg-black/40 backdrop-blur-sm flex justify-center items-center z-50 p-4">
+        <div id="confirm-modal-box" class="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl text-center">
+            <h3 class="text-lg font-bold text-slate-800">Konfirmasi Hapus</h3>
+            <p class="text-slate-600 mt-2 mb-6">Apakah Anda yakin ingin menghapus data ini secara permanen?</p>
+            <div class="flex justify-center gap-4">
+                <button id="confirm-cancel-btn" class="w-full text-slate-700 bg-slate-200 hover:bg-slate-300 font-bold rounded-lg text-sm px-5 py-3 text-center transition-colors">Batal</button>
+                <button id="confirm-delete-btn" class="w-full text-white bg-red-600 hover:bg-red-700 font-bold rounded-lg text-sm px-5 py-3 text-center transition-colors">Ya, Hapus</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Definisikan semua elemen DOM di sini...
+            // --- Definisikan semua elemen DOM ---
             const mainCard = document.querySelector('.main-card');
             const tabelBtn = document.getElementById('tabel-btn');
             const adminBtn = document.getElementById('admin-btn');
@@ -254,13 +254,18 @@
             const bulkUpdateBtn = document.getElementById('bulk-update-btn');
             const bulkUpdateResults = document.getElementById('bulk-update-results');
             
-            // ... Variabel dan konfigurasi lainnya ...
+            // Elemen Modal
+            const confirmModalOverlay = document.getElementById('confirm-modal-overlay');
+            const confirmCancelBtn = document.getElementById('confirm-cancel-btn');
+            const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
+            
+            // --- Variabel dan konfigurasi ---
             const JSONBIN_API_KEY = '$2a$10$CyEgkHrw6xtwHt.RE3ZqEulgvcK5yzSmlYJmn.aRA23csA9a8u/.2';
             const JSONBIN_BIN_ID = '68c9791f43b1c97be945093d';
             const JSONBIN_URL = `https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`;
-            const ADMIN_PASSWORD = "y";
             let allData = [];
             let isAdminUnlocked = false;
+            let deleteId = null; // Menyimpan ID yang akan dihapus
 
             const weekSelect = document.getElementById('week');
             for (let i = 20; i <= 100; i++) weekSelect.innerHTML += `<option value="${i}">W ${i}</option>`;
@@ -288,17 +293,14 @@
                     adminBtn.classList.remove('switch-btn-active');
                     fetchData();
                 } else if (view === 'admin') {
-                    if (isAdminUnlocked) {
-                        tabelView.classList.add('hidden');
-                        adminView.classList.remove('hidden');
-                        logoutBtn.classList.remove('hidden');
-                        adminBtn.classList.add('switch-btn-active');
-                        adminBtn.classList.remove('switch-btn-inactive');
-                        tabelBtn.classList.add('switch-btn-inactive');
-                        tabelBtn.classList.remove('switch-btn-active');
-                    } else {
-                        createPasswordPrompt();
-                    }
+                    isAdminUnlocked = true;
+                    tabelView.classList.add('hidden');
+                    adminView.classList.remove('hidden');
+                    logoutBtn.classList.remove('hidden');
+                    adminBtn.classList.add('switch-btn-active');
+                    adminBtn.classList.remove('switch-btn-inactive');
+                    tabelBtn.classList.add('switch-btn-inactive');
+                    tabelBtn.classList.remove('switch-btn-active');
                 }
             }
             
@@ -399,10 +401,7 @@
 
             function handleEdit(id) {
                 const item = allData.find(d => d.id.toString() === id.toString());
-                if (!item) {
-                    console.error("Item not found for ID:", id);
-                    return;
-                };
+                if (!item) return;
 
                 formTitle.textContent = 'Edit Data';
                 submitBtn.textContent = 'Update Data';
@@ -414,13 +413,25 @@
                 document.getElementById('kategori').value = item.kategori;
                 document.getElementById('week').value = item.week;
                 document.getElementById('day').value = item.day;
+                
+                document.getElementById('referral').readOnly = true;
+                document.getElementById('week').disabled = true;
+                document.getElementById('day').disabled = true;
+                
                 adminForm.scrollIntoView({ behavior: 'smooth' });
             }
 
-            async function handleDelete(id) {
-                if (!confirm('Apakah Anda yakin ingin menghapus data ini?')) return;
-                const updatedData = allData.filter(d => d.id.toString() !== id.toString());
+            function handleDelete(id) {
+                deleteId = id;
+                confirmModalOverlay.classList.remove('hidden');
+            }
+
+            async function performDelete() {
+                if (!deleteId) return;
+                const updatedData = allData.filter(d => d.id.toString() !== deleteId.toString());
+                confirmModalOverlay.classList.add('hidden');
                 await saveData(updatedData, 'dihapus');
+                deleteId = null;
             }
             
             function resetForm() {
@@ -429,6 +440,10 @@
                 formTitle.textContent = 'Tambah Data Baru';
                 submitBtn.textContent = 'Tambah Data';
                 cancelEditBtn.classList.add('hidden');
+
+                document.getElementById('referral').readOnly = false;
+                document.getElementById('week').disabled = false;
+                document.getElementById('day').disabled = false;
             }
 
             async function fetchData() {
@@ -471,44 +486,6 @@
                 }
             }
 
-            function createPasswordPrompt() {
-                let promptOverlay = document.getElementById('password-prompt-overlay');
-                if (promptOverlay) return;
-                promptOverlay = document.createElement('div');
-                promptOverlay.id = 'password-prompt-overlay';
-                promptOverlay.innerHTML = `
-                    <div class="password-prompt-box">
-                        <form id="password-form">
-                            <label for="password-input" class="block mb-4 text-sm font-bold text-slate-700">Masukkan Sandi Admin</label>
-                            <input type="password" id="password-input" class="text-sm rounded-lg block w-full p-2.5" required>
-                            <div id="password-error"></div>
-                            <button type="submit" class="mt-4 w-full text-white bg-blue-600 hover:bg-blue-700 font-bold rounded-lg text-sm px-5 py-2.5 text-center">Masuk</button>
-                        </form>
-                    </div>`;
-                mainCard.appendChild(promptOverlay);
-                const passwordForm = document.getElementById('password-form');
-                const passwordInput = document.getElementById('password-input');
-                const passwordError = document.getElementById('password-error');
-                passwordInput.focus();
-                passwordForm.addEventListener('submit', (e) => {
-                    e.preventDefault();
-                    if (passwordInput.value === ADMIN_PASSWORD) {
-                        isAdminUnlocked = true;
-                        promptOverlay.remove();
-                        switchView('admin');
-                    } else {
-                        passwordError.textContent = 'Sandi salah. Coba lagi.';
-                        passwordInput.value = '';
-                        passwordInput.focus();
-                        passwordForm.parentElement.animate([
-                            { transform: 'translateX(0)' }, { transform: 'translateX(-10px)' },
-                            { transform: 'translateX(10px)' }, { transform: 'translateX(-10px)' },
-                            { transform: 'translateX(10px)' }, { transform: 'translateX(0)' }
-                        ], { duration: 500, easing: 'ease-in-out' });
-                    }
-                });
-            }
-
             async function handleBulkUpdate() {
                 const emailsText = bulkEmailsInput.value.trim();
                 if (!emailsText) {
@@ -530,7 +507,6 @@
                             item.kategori = action;
                         }
                         foundItems.push(item);
-                        return item;
                     }
                     return item;
                 });
@@ -590,32 +566,49 @@
             adminForm.addEventListener('submit', async function(e) {
                 e.preventDefault();
                 const editId = document.getElementById('edit-id').value;
-                const formData = {
-                    email: document.getElementById('email').value,
-                    whatsapp: document.getElementById('whatsapp').value,
-                    referral: document.getElementById('referral').value,
-                    kategori: document.getElementById('kategori').value,
-                    week: document.getElementById('week').value,
-                    day: document.getElementById('day').value,
-                };
                 let updatedData, action;
+
                 if (editId) {
                     action = 'diperbarui';
-                    updatedData = allData.map(item => item.id.toString() === editId ? { ...item, ...formData, id: item.id } : item);
+                    updatedData = allData.map(item => {
+                        if (item.id.toString() === editId) {
+                            return {
+                                ...item,
+                                email: document.getElementById('email').value,
+                                whatsapp: document.getElementById('whatsapp').value,
+                                kategori: document.getElementById('kategori').value,
+                            };
+                        }
+                        return item;
+                    });
                 } else {
                     action = 'ditambahkan';
-                    updatedData = [...allData, { ...formData, id: Date.now(), timestamp: new Date().toISOString() }];
+                    const formData = {
+                        id: Date.now(),
+                        timestamp: new Date().toISOString(),
+                        email: document.getElementById('email').value,
+                        whatsapp: document.getElementById('whatsapp').value,
+                        referral: document.getElementById('referral').value,
+                        kategori: document.getElementById('kategori').value,
+                        week: document.getElementById('week').value,
+                        day: document.getElementById('day').value,
+                    };
+                    updatedData = [...allData, formData];
                 }
                 await saveData(updatedData, action);
             });
             
-            // Event Listeners Utama
+            // --- Event Listeners Utama ---
             tabelBtn.addEventListener('click', () => switchView('tabel'));
             adminBtn.addEventListener('click', () => switchView('admin'));
             logoutBtn.addEventListener('click', () => switchView('tabel'));
             cancelEditBtn.addEventListener('click', () => resetForm());
             searchInput.addEventListener('input', () => renderCards(allData, searchInput.value));
             bulkUpdateBtn.addEventListener('click', handleBulkUpdate);
+
+            // Event listener untuk modal
+            confirmCancelBtn.addEventListener('click', () => confirmModalOverlay.classList.add('hidden'));
+            confirmDeleteBtn.addEventListener('click', performDelete);
             
             fetchData();
         });
