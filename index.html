@@ -1,508 +1,401 @@
-        .action-btn { cursor: pointer; }
-        .action-btn:hover { background-color: rgba(0,0,0,0.05); border-radius: 50%; }
-        .edit-btn i { color: #3b82f6; }
-        .delete-btn i { color: #ef4444; }
-    </style>
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <title>Panel Admin - Dashboard & Admin</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    /* Basic styling - clean & mobile friendly */
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;margin:12px;background:#f4f6f8;color:#222}
+    .nav{display:flex;gap:8px;margin-bottom:12px}
+    .tab{padding:8px 12px;border-radius:8px;background:#fff;border:1px solid #e0e6eb;cursor:pointer}
+    .tab.active{background:#0b79f7;color:#fff;border-color:#0b79f7}
+    .card{background:#fff;border-radius:10px;padding:12px;box-shadow:0 1px 6px rgba(0,0,0,0.06);margin-bottom:10px}
+    .flex{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+    input,select,textarea,button{font-size:14px}
+    input,select,textarea{padding:8px;border:1px solid #d0d6db;border-radius:6px}
+    textarea{min-height:100px;width:100%;resize:vertical}
+    .btn{padding:8px 10px;border-radius:6px;border:0;cursor:pointer}
+    .primary{background:#0b79f7;color:#fff}
+    .danger{background:#e24b4b;color:#fff}
+    .ghost{background:transparent;border:1px solid #d0d6db}
+    .dashboard{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+    @media(min-width:900px){.dashboard{grid-template-columns:repeat(4,1fr)}}
+    .dash-item{padding:10px}
+    .dash-title{display:flex;justify-content:space-between;align-items:center}
+    .count{font-weight:700;font-size:18px}
+    .list-emails{margin-top:10px;padding-top:8px;border-top:1px dashed #e6e9ec;display:none}
+    .email-row{padding:6px 0;border-bottom:1px solid #f1f3f5;display:flex;justify-content:space-between;align-items:center}
+    .muted{color:#666;font-size:13px}
+    .item-card{background:#fff;padding:10px;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,0.04);margin-bottom:10px}
+    .small{font-size:13px;color:#555}
+    .hidden{display:none}
+  </style>
 </head>
 <body>
 
-    <div class="aurora-background">
-        <div class="aurora-item"></div>
-        <div class="aurora-item"></div>
-        <div class="aurora-item"></div>
+  <h2>Panel Admin</h2>
+
+  <!-- Tabs -->
+  <div class="nav">
+    <div id="tabDashboard" class="tab active">Dashboard Status</div>
+    <div id="tabAdmin" class="tab">Admin Panel</div>
+  </div>
+
+  <!-- Dashboard view -->
+  <div id="viewDashboard">
+    <div class="card">
+      <div style="font-weight:700;margin-bottom:6px">Ringkasan Status</div>
+      <div class="dashboard" id="dashboard"></div>
+    </div>
+  </div>
+
+  <!-- Admin view -->
+  <div id="viewAdmin" class="hidden">
+    <div class="card">
+      <div class="flex" style="align-items:center">
+        <input id="email" type="email" placeholder="Email" style="flex:1" />
+        <input id="wa" type="text" placeholder="No WA (085xxx atau +6285xxx)" style="width:160px" />
+        <input id="tanggal" type="text" readonly style="width:180px" />
+        <select id="statusSelect" style="width:140px">
+          <option>New Acc</option><option>Unrestrict</option><option>Old Acc</option><option>Restric</option>
+        </select>
+        <button id="addBtn" class="btn primary">Tambah</button>
+        <button id="resetFormBtn" class="btn ghost">Reset</button>
+      </div>
+      <div class="muted small" style="margin-top:6px">Note: WA otomatis disimpan dengan prefix <code>+62</code> bila diperlukan.</div>
     </div>
 
-    <div class="content-container">
-        <div class="main-card">
-            <h1 class="font-title text-2xl sm:text-3xl font-bold text-slate-800">Refferer 7777</h1>
-
-            <button id="logout-btn" title="Keluar dari Mode Admin" class="hidden absolute top-4 right-4 h-10 w-10 bg-slate-200 text-slate-600 rounded-full hover:bg-slate-300 transition-colors">
-                <i class="fas fa-sign-out-alt"></i>
-            </button>
-
-            <div class="p-1 flex switch-bg rounded-full w-full max-w-xs">
-                <button id="tabel-btn" class="w-1/2 py-2 px-4 rounded-full switch-btn-active transition-all duration-300 font-bold text-sm">Tabel</button>
-                <button id="admin-btn" class="w-1/2 py-2 px-4 rounded-full switch-btn-inactive transition-all duration-300 font-medium text-sm">Admin</button>
-            </div>
-
-            <div id="toast-message" class="fixed top-5 right-5 p-4 rounded-lg text-white transition-opacity duration-300 opacity-0 z-50"></div>
-
-            <div id="tabel-view" class="view-container w-full h-full flex flex-col">
-                <div class="relative w-full max-w-md mx-auto mb-4 px-2">
-                    <input type="text" id="search-input" placeholder="Cari berdasarkan email..." class="w-full pl-10 pr-4 py-2 text-sm border border-slate-300 rounded-full bg-white/50 focus:ring-blue-500 focus:border-blue-500 transition shadow-sm">
-                    <i class="fas fa-search absolute left-6 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                </div>
-                <div id="card-container" class="flex-grow pr-2 -mr-2 space-y-4"></div>
-            </div>
-
-            <div id="admin-view" class="admin-view view-container w-full h-full text-left pr-2 -mr-2 hidden">
-                 <form id="admin-form" class="space-y-4 max-w-md mx-auto">
-                    <h2 id="form-title" class="text-xl font-bold text-slate-700 text-center">Tambah Data Baru</h2>
-                    <input type="hidden" id="edit-id">
-                    <div>
-                        <label for="email" class="block mb-2 text-sm font-medium">Email</label>
-                        <input type="email" id="email" class="text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="user@example.com" required>
-                    </div>
-                    <div>
-                        <label for="whatsapp" class="block mb-2 text-sm font-medium">No. WhatsApp</label>
-                        <input type="tel" id="whatsapp" class="text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="08123456789" required>
-                    </div>
-                    <div>
-                        <label for="referral" class="block mb-2 text-sm font-medium">Referral</label>
-                        <input type="text" id="referral" class="text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="Email atau ID referral" required>
-                    </div>
-                    <div>
-                        <label for="kategori" class="block mb-2 text-sm font-medium">Kategori Akun</label>
-                        <select id="kategori" class="text-sm rounded-lg block w-full p-2.5">
-                            <option value="Running">Running</option>
-                            <option value="Unrestrict">Unrestrict</option>
-                            <option value="Restric">Restric</option>
-                        </select>
-                    </div>
-                    <div class="flex gap-4">
-                        <div class="w-1/2">
-                            <label for="week" class="block mb-2 text-sm font-medium">Week (W)</label>
-                            <select id="week" class="text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"></select>
-                        </div>
-                        <div class="w-1/2">
-                            <label for="day" class="block mb-2 text-sm font-medium">Day (D)</label>
-                            <select id="day" class="text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"></select>
-                        </div>
-                    </div>
-                    <button type="submit" id="submit-btn" class="w-full text-white bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:outline-none focus:ring-blue-300 font-bold rounded-lg text-sm px-5 py-3 text-center transition-colors">
-                        Tambah Data
-                    </button>
-                    <button type="button" id="cancel-edit-btn" class="w-full text-slate-700 bg-slate-200 hover:bg-slate-300 font-bold rounded-lg text-sm px-5 py-3 text-center transition-colors hidden">
-                        Batal Edit
-                    </button>
-                </form>
-                
-                <div id="admin-data-list" class="mt-8">
-                     <h2 class="text-xl font-bold text-slate-700 text-center mb-4">Daftar Data</h2>
-                     <div id="admin-card-list" class="space-y-3">
-                         <!-- Kartu admin akan dirender di sini -->
-                     </div>
-                </div>
-
-                <div id="bulk-update-container" class="mt-8 pt-6 border-t border-slate-200">
-                    <h2 class="text-xl font-bold text-slate-700 text-center mb-4">Identifikasi Massal</h2>
-                    <div class="space-y-4 max-w-md mx-auto">
-                        <div>
-                            <label for="bulk-emails" class="block mb-2 text-sm font-medium">Daftar Email</label>
-                            <textarea id="bulk-emails" rows="6" class="text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="email1@example.com, email2@example.com..."></textarea>
-                        </div>
-                        <div>
-                            <label for="bulk-kategori" class="block mb-2 text-sm font-medium">Aksi untuk Email yang Ditemukan</label>
-                            <select id="bulk-kategori" class="text-sm rounded-lg block w-full p-2.5">
-                                <option value="identify_only" selected>Hanya Identifikasi (Jangan ubah apa-apa)</option>
-                                <option value="Running">Ubah Kategori ke Running</option>
-                                <option value="Unrestrict">Ubah Kategori ke Unrestrict</option>
-                                <option value="Restric">Ubah Kategori ke Restric</option>
-                            </select>
-                        </div>
-                        <button type="button" id="bulk-update-btn" class="w-full text-white bg-blue-600 hover:bg-blue-700 font-bold rounded-lg text-sm px-5 py-3 text-center transition-colors">
-                            Proses
-                        </button>
-                        <div id="bulk-update-results" class="mt-4 text-sm hidden"></div>
-                    </div>
-                </div>
-            </div>
+    <div class="card">
+      <div style="font-weight:700;margin-bottom:8px">Kontrol Admin</div>
+      <div class="flex" style="align-items:center">
+        <input id="searchInput" placeholder="Cari email..." style="flex:1" />
+        <button id="reloadBtn" class="btn ghost">Reload</button>
+      </div>
+      <div style="margin-top:10px">
+        <div style="font-weight:700;margin-bottom:6px">Identifikasi Massal</div>
+        <textarea id="bulkInput" placeholder="Tempel email (satu per baris)"></textarea>
+        <div class="flex" style="margin-top:8px">
+          <button id="identifyBtn" class="btn primary">Identifikasi</button>
+          <select id="bulkStatusSelect" style="width:160px">
+            <option>New Acc</option><option>Unrestrict</option><option>Old Acc</option><option>Restric</option>
+          </select>
+          <button id="bulkUpdateBtn" class="btn primary">Ubah Status Massal</button>
+          <button id="bulkResetBtn" class="btn danger">Reset</button>
         </div>
+        <div id="identifyResult" class="muted small" style="margin-top:8px"></div>
+      </div>
     </div>
 
-    <!-- Modal Konfirmasi Hapus -->
-    <div id="confirm-modal-overlay" class="hidden fixed inset-0 bg-black/40 backdrop-blur-sm flex justify-center items-center z-50 p-4">
-        <div id="confirm-modal-box" class="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl text-center">
-            <h3 class="text-lg font-bold text-slate-800">Konfirmasi Hapus</h3>
-            <p class="text-slate-600 mt-2 mb-6">Apakah Anda yakin ingin menghapus data ini secara permanen?</p>
-            <div class="flex justify-center gap-4">
-                <button id="confirm-cancel-btn" class="w-full text-slate-700 bg-slate-200 hover:bg-slate-300 font-bold rounded-lg text-sm px-5 py-3 text-center transition-colors">Batal</button>
-                <button id="confirm-delete-btn" class="w-full text-white bg-red-600 hover:bg-red-700 font-bold rounded-lg text-sm px-5 py-3 text-center transition-colors">Ya, Hapus</button>
-            </div>
+    <div id="adminList"></div>
+  </div>
+
+<script>
+/* ========== Konfigurasi JSONBin ========== */
+const BIN_ID = "6905803fae596e708f3baa25";
+const API_KEY = "$2a$10$ziNrwiYaAO5/AfgfNP218OKOtjLxTV6c7Zau9vLmygY35FQ36jlci";
+const BASE = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
+
+/* ========== DOM ========== */
+const tabDashboard = document.getElementById('tabDashboard');
+const tabAdmin = document.getElementById('tabAdmin');
+const viewDashboard = document.getElementById('viewDashboard');
+const viewAdmin = document.getElementById('viewAdmin');
+
+const dashboardEl = document.getElementById('dashboard');
+
+const emailEl = document.getElementById('email');
+const waEl = document.getElementById('wa');
+const tanggalEl = document.getElementById('tanggal');
+const statusSelect = document.getElementById('statusSelect');
+const addBtn = document.getElementById('addBtn');
+const resetFormBtn = document.getElementById('resetFormBtn');
+
+const searchInput = document.getElementById('searchInput');
+const reloadBtn = document.getElementById('reloadBtn');
+
+const bulkInput = document.getElementById('bulkInput');
+const identifyBtn = document.getElementById('identifyBtn');
+const bulkUpdateBtn = document.getElementById('bulkUpdateBtn');
+const bulkResetBtn = document.getElementById('bulkResetBtn');
+const bulkStatusSelect = document.getElementById('bulkStatusSelect');
+const identifyResult = document.getElementById('identifyResult');
+
+const adminList = document.getElementById('adminList');
+
+/* ========== State ========== */
+let dbData = [];            // cached data from JSONBin
+let editingEmail = null;    // if editing (original email)
+
+/* ========== Utilities ========== */
+function formatTanggalNow(){
+  return new Date().toLocaleDateString('id-ID',{ weekday:'long', day:'numeric', month:'long' });
+}
+tanggalEl.value = formatTanggalNow();
+
+function normalizeWA(v){
+  if(!v) return '';
+  let s = String(v).trim().replace(/\s+/g,'');
+  if(s.startsWith('+62')) return s;
+  if(s.startsWith('0')) return '+62' + s.slice(1);
+  if(s.startsWith('62')) return '+62' + s.slice(2);
+  return '+62' + s;
+}
+function escapeHtml(s){ if(!s && s !== 0) return ''; return String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;'); }
+function decodeHtml(str){ const t=document.createElement('textarea'); t.innerHTML=str; return t.value; }
+
+/* ========== Tab switching ========== */
+tabDashboard.onclick = ()=>{ tabDashboard.classList.add('active'); tabAdmin.classList.remove('active'); viewDashboard.classList.remove('hidden'); viewAdmin.classList.add('hidden'); }
+tabAdmin.onclick = ()=>{ tabAdmin.classList.add('active'); tabDashboard.classList.remove('active'); viewAdmin.classList.remove('hidden'); viewDashboard.classList.add('hidden'); }
+
+/* ========== Fetch helpers ========== */
+async function fetchLatest(){
+  try{
+    const res = await fetch(`${BASE}/latest`, { headers: { 'X-Master-Key': API_KEY }});
+    const j = await res.json();
+    return j.record || [];
+  }catch(e){
+    console.error('fetchLatest err', e);
+    return [];
+  }
+}
+async function putAll(arr){
+  try{
+    await fetch(BASE, {
+      method: 'PUT',
+      headers: { 'Content-Type':'application/json', 'X-Master-Key': API_KEY },
+      body: JSON.stringify(arr)
+    });
+  }catch(e){
+    console.error('putAll err', e);
+    alert('Gagal menyimpan. Cek console.');
+  }
+}
+
+/* ========== Load & Render ========== */
+async function loadAll(){
+  dbData = await fetchLatest();
+  if(!Array.isArray(dbData)) dbData = [];
+  renderDashboard();
+  renderAdminList();
+  applySearch(); // keep search filter
+}
+
+function getWhatsAppField(item){
+  return item.whatsapp || item.WhatsApp || item.wa || item.WA || '-';
+}
+
+function renderDashboard(){
+  const keys = ['New Acc','Unrestrict','Old Acc','Restric'];
+  // categorize
+  const categories = {};
+  keys.forEach(k=> categories[k] = []);
+  dbData.forEach(it=>{
+    const st = it.statusAcc || it.status || 'New Acc';
+    const key = keys.includes(st) ? st : 'New Acc';
+    categories[key].push(it);
+  });
+
+  // build cards
+  dashboardEl.innerHTML = keys.map(key=>{
+    const list = categories[key];
+    const id = `list-${key.replace(/\s+/g,'')}`;
+    return `
+      <div class="card dash-item">
+        <div class="dash-title">
+          <div>
+            <div style="font-weight:700">${escapeHtml(key)}</div>
+            <div class="small muted">Total email</div>
+          </div>
+          <div style="text-align:right">
+            <div class="count">${list.length}</div>
+            <button class="btn ghost" data-target="${id}" aria-expanded="false">⋮</button>
+          </div>
         </div>
-    </div>
+        <div id="${id}" class="list-emails">
+          ${ list.length ? list.map(it=>`<div class="email-row"><div>${escapeHtml(it.email)}</div><div class="small muted">${escapeHtml(getWhatsAppField(it))}</div></div>`).join('') : `<div class="small muted" style="padding:6px 0">Tidak ada email</div>`}
+        </div>
+      </div>
+    `;
+  }).join('');
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // --- Definisikan semua elemen DOM ---
-            const mainCard = document.querySelector('.main-card');
-            const tabelBtn = document.getElementById('tabel-btn');
-            const adminBtn = document.getElementById('admin-btn');
-            const logoutBtn = document.getElementById('logout-btn');
-            const tabelView = document.getElementById('tabel-view');
-            const adminView = document.getElementById('admin-view');
-            const cardContainer = document.getElementById('card-container');
-            const searchInput = document.getElementById('search-input');
-            const toastMessage = document.getElementById('toast-message');
-            const adminForm = document.getElementById('admin-form');
-            const submitBtn = document.getElementById('submit-btn');
-            const cancelEditBtn = document.getElementById('cancel-edit-btn');
-            const adminCardList = document.getElementById('admin-card-list');
-            const formTitle = document.getElementById('form-title');
-            const bulkEmailsInput = document.getElementById('bulk-emails');
-            const bulkKategoriSelect = document.getElementById('bulk-kategori');
-            const bulkUpdateBtn = document.getElementById('bulk-update-btn');
-            const bulkUpdateResults = document.getElementById('bulk-update-results');
-            
-            // Elemen Modal
-            const confirmModalOverlay = document.getElementById('confirm-modal-overlay');
-            const confirmCancelBtn = document.getElementById('confirm-cancel-btn');
-            const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
-            
-            // --- Variabel dan konfigurasi ---
-            const JSONBIN_API_KEY = '$2a$10$CyEgkHrw6xtwHt.RE3ZqEulgvcK5yzSmlYJmn.aRA23csA9a8u/.2';
-            const JSONBIN_BIN_ID = '68c9791f43b1c97be945093d';
-            const JSONBIN_URL = `https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`;
-            let allData = [];
-            let isAdminUnlocked = false;
-            let deleteId = null; // Menyimpan ID yang akan dihapus
+  // attach toggle handlers
+  document.querySelectorAll('[data-target]').forEach(btn=>{
+    const tgt = btn.getAttribute('data-target');
+    btn.onclick = () => {
+      const el = document.getElementById(tgt);
+      if(!el) return;
+      const isOpen = el.style.display === 'block';
+      el.style.display = isOpen ? 'none' : 'block';
+      btn.setAttribute('aria-expanded', isOpen ? 'false' : 'true');
+    };
+  });
+}
 
-            const weekSelect = document.getElementById('week');
-            for (let i = 20; i <= 100; i++) weekSelect.innerHTML += `<option value="${i}">W ${i}</option>`;
-            const daySelect = document.getElementById('day');
-            for (let i = 1; i <= 6; i++) daySelect.innerHTML += `<option value="${i}">D ${i}</option>`;
-            
-            // --- Fungsi Inti (UI, Data, dll) ---
+/* ========== Admin List (detailed) ========== */
+function renderAdminList(){
+  // sort by status order
+  const order = ['New Acc','Unrestrict','Old Acc','Restric'];
+  const sorted = [...dbData].sort((a,b)=> order.indexOf(a.statusAcc||a.status||'New Acc') - order.indexOf(b.statusAcc||b.status||'New Acc'));
 
-            function showToast(message, isError = false) {
-                toastMessage.textContent = message;
-                toastMessage.className = `fixed top-5 right-5 p-4 rounded-lg text-white transition-all duration-300 z-50 ${isError ? 'bg-red-500' : 'bg-green-500'} shadow-lg`;
-                toastMessage.style.opacity = 1;
-                setTimeout(() => { toastMessage.style.opacity = 0; }, 3000);
-            }
+  adminList.innerHTML = sorted.map(item=>{
+    const wa = getWhatsAppField(item);
+    const status = item.statusAcc || item.status || 'New Acc';
+    const tanggal = item.tanggal || '-';
+    const e = escapeHtml(item.email || '-');
+    return `
+      <div class="item-card card" data-email="${e}">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div style="font-weight:700">${e}</div>
+          <div>
+            <button class="btn ghost" data-action="edit" data-email="${e}">Edit</button>
+            <button class="btn danger" data-action="delete" data-email="${e}">Hapus</button>
+          </div>
+        </div>
+        <div style="margin-top:8px" class="muted">
+          <div>No WA: ${escapeHtml(wa)}</div>
+          <div>Tanggal: ${escapeHtml(tanggal)}</div>
+          <div>Status: ${escapeHtml(status)}</div>
+        </div>
+      </div>
+    `;
+  }).join('');
 
-            function switchView(view) {
-                if (view === 'tabel') {
-                    isAdminUnlocked = false; 
-                    tabelView.classList.remove('hidden');
-                    adminView.classList.add('hidden');
-                    logoutBtn.classList.add('hidden');
-                    tabelBtn.classList.add('switch-btn-active');
-                    tabelBtn.classList.remove('switch-btn-inactive');
-                    adminBtn.classList.add('switch-btn-inactive');
-                    adminBtn.classList.remove('switch-btn-active');
-                    fetchData();
-                } else if (view === 'admin') {
-                    isAdminUnlocked = true;
-                    tabelView.classList.add('hidden');
-                    adminView.classList.remove('hidden');
-                    logoutBtn.classList.remove('hidden');
-                    adminBtn.classList.add('switch-btn-active');
-                    adminBtn.classList.remove('switch-btn-inactive');
-                    tabelBtn.classList.add('switch-btn-inactive');
-                    tabelBtn.classList.remove('switch-btn-active');
-                }
-            }
-            
-            function renderCards(data, filter = '') {
-                const searchTerm = filter.toLowerCase();
-                const filteredData = data.filter(item => 
-                    item.email.toLowerCase().includes(searchTerm)
-                );
+  // attach event handlers
+  adminList.querySelectorAll('[data-action="edit"]').forEach(btn=>{
+    btn.onclick = () => {
+      const e = decodeHtml(btn.getAttribute('data-email'));
+      startEdit(e);
+    };
+  });
+  adminList.querySelectorAll('[data-action="delete"]').forEach(btn=>{
+    btn.onclick = () => {
+      const e = decodeHtml(btn.getAttribute('data-email'));
+      deleteByEmail(e);
+    };
+  });
+}
 
-                cardContainer.innerHTML = '';
+/* ========== Search / Filter ========== */
+function applySearch(){
+  const q = (searchInput.value || '').trim().toLowerCase();
+  document.querySelectorAll('#adminList .item-card').forEach(card=>{
+    const email = (card.getAttribute('data-email')||'').toLowerCase();
+    card.style.display = email.includes(q) ? '' : 'none';
+  });
+  // dashboard expanded lists
+  document.querySelectorAll('.list-emails .email-row').forEach(row=>{
+    row.style.display = row.innerText.toLowerCase().includes(q) ? '' : 'none';
+  });
+}
 
-                if (filteredData.length === 0) {
-                    cardContainer.innerHTML = filter 
-                        ? `<p class="text-center p-8 text-slate-500">Email "${filter}" tidak ditemukan.</p>`
-                        : `<p class="text-center p-8 text-slate-500">Belum ada data.</p>`;
-                    return;
-                }
+/* ========== Add / Edit / Delete ========== */
+addBtn.addEventListener('click', async ()=>{
+  const email = (emailEl.value || '').trim().toLowerCase();
+  if(!email) return alert('Isi email dulu');
+  let wa = (waEl.value || '').trim();
+  wa = wa ? normalizeWA(wa) : '';
+  const tanggal = tanggalEl.value || formatTanggalNow();
+  const status = statusSelect.value || 'New Acc';
 
-                filteredData.forEach(item => {
-                    const timeString = item.timestamp ? new Date(item.timestamp).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }).replace(/\./g, ':') : '';
-                    const dateDisplay = `W${item.week} D${item.day} · ${timeString}`;
-                    
-                    const isRestricted = item.kategori === 'Restric';
-                    const statusColor = isRestricted ? 'text-red-600' : 'text-green-600';
-                    const kategoriDisplay = isRestricted ? '$1' : '$2';
+  const latest = await fetchLatest();
 
-                    const cardHTML = `
-                        <div class="light-glass-card text-left">
-                            <div class="flex justify-between items-start gap-3">
-                                <div class="min-w-0 flex-1">
-                                    <p class="font-title font-bold text-slate-800 text-base sm:text-lg leading-tight break-words" title="${item.email}">${item.email}</p>
-                                    <p class="text-xs text-slate-500 font-medium mt-1">${dateDisplay}</p>
-                                </div>
-                                <div class="flex-shrink-0 h-8 w-8 sm:h-10 sm:w-10 rounded-full flex items-center justify-center ${isRestricted ? 'bg-red-100' : 'bg-green-100'}">
-                                    <p class="font-bold text-base sm:text-lg ${statusColor}">${kategoriDisplay}</p>
-                                </div>
-                            </div>
-                            <div class="mt-4 pt-4 border-t border-black/5 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3 text-sm">
-                                <div class="flex items-center gap-3">
-                                    <div class="w-8 h-8 flex-shrink-0 flex items-center justify-center bg-slate-100 rounded-full">
-                                        <i class="fab fa-whatsapp text-slate-500 text-lg"></i>
-                                    </div>
-                                    <div>
-                                        <p class="text-xs text-slate-500 font-semibold">WHATSAPP</p>
-                                        <p class="text-slate-700 font-medium truncate">${item.whatsapp}</p>
-                                    </div>
-                                </div>
-                                <div class="flex items-center gap-3">
-                                    <div class="w-8 h-8 flex-shrink-0 flex items-center justify-center bg-slate-100 rounded-full">
-                                        <i class="fa fa-user-check text-slate-500 text-lg"></i>
-                                    </div>
-                                    <div>
-                                        <p class="text-xs text-slate-500 font-semibold">REFERRAL</p>
-                                        <p class="text-slate-700 font-medium truncate">${item.referral}</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>`;
-                    cardContainer.innerHTML += cardHTML;
-                });
-            }
+  if(editingEmail){
+    const idx = latest.findIndex(d => (d.email||'').toLowerCase() === (editingEmail||'').toLowerCase());
+    if(idx === -1){
+      alert('Data tidak ditemukan di server. Reloading.');
+      editingEmail = null;
+      return loadAll();
+    }
+    // prevent duplicate email if changed
+    if(email.toLowerCase() !== editingEmail.toLowerCase() && latest.some((d,i)=>i!==idx && (d.email||'').toLowerCase() === email.toLowerCase())){
+      return alert('Email sudah ada, tidak bisa mengganti ke email yang sama.');
+    }
+    // update: keep other fields if exist
+    latest[idx] = { ...latest[idx], email, whatsapp: wa, tanggal, statusAcc: status };
+    await putAll(latest);
+    editingEmail = null;
+    resetForm();
+    return loadAll();
+  }
 
-            function renderAdminCards(data) {
-                adminCardList.innerHTML = '';
-                if (!data || data.length === 0) {
-                    adminCardList.innerHTML = '<p class="text-center p-4 text-slate-500">Tidak ada data.</p>';
-                    return;
-                }
-                data.forEach(item => {
-                    let badgeColor = '';
-                    switch(item.kategori) {
-                        case 'Restric': badgeColor = 'bg-red-100 text-red-700'; break;
-                        case 'Unrestrict': badgeColor = 'bg-yellow-100 text-yellow-700'; break;
-                        default: badgeColor = 'bg-green-100 text-green-700';
-                    }
+  // add new
+  if(latest.some(d => (d.email||'').toLowerCase() === email.toLowerCase())) return alert('Email sudah ada!');
+  latest.push({ email, whatsapp: wa, tanggal, statusAcc: status });
+  await putAll(latest);
+  resetForm();
+  loadAll();
+});
 
-                    const card = document.createElement('div');
-                    card.className = 'bg-white border border-slate-200 rounded-lg p-3 flex justify-between items-center';
-                    card.innerHTML = `
-                        <div class="min-w-0 flex-1">
-                            <p class="text-sm font-medium text-slate-800 break-words">${item.email}</p>
-                            <span class="text-xs font-semibold px-2 py-0.5 rounded-full ${badgeColor}">${item.kategori}</span>
-                        </div>
-                        <div class="flex-shrink-0 ml-2 flex gap-1">
-                            <button class="action-btn edit-btn w-8 h-8 flex items-center justify-center" title="Edit">
-                                <i class="fas fa-pencil-alt"></i>
-                            </button>
-                            <button class="action-btn delete-btn w-8 h-8 flex items-center justify-center" title="Hapus">
-                                <i class="fas fa-trash-alt"></i>
-                            </button>
-                        </div>
-                    `;
-                    card.querySelector('.edit-btn').addEventListener('click', () => handleEdit(item.id));
-                    card.querySelector('.delete-btn').addEventListener('click', () => handleDelete(item.id));
-                    adminCardList.appendChild(card);
-                });
-            }
+function resetForm(){
+  emailEl.value=''; waEl.value=''; statusSelect.value='New Acc'; editingEmail = null;
+}
+resetFormBtn.addEventListener('click', resetForm);
 
-            function handleEdit(id) {
-                const item = allData.find(d => d.id.toString() === id.toString());
-                if (!item) return;
+function startEdit(email){
+  const item = dbData.find(d => (d.email||'').toLowerCase() === (email||'').toLowerCase());
+  if(!item) return alert('Data tidak ditemukan.');
+  emailEl.value = item.email || '';
+  waEl.value = item.whatsapp || item.WhatsApp || '';
+  statusSelect.value = item.statusAcc || item.status || 'New Acc';
+  editingEmail = item.email;
+  // switch to admin tab
+  tabAdmin.click();
+  window.scrollTo({ top:0, behavior:'smooth' });
+}
 
-                formTitle.textContent = 'Edit Data';
-                submitBtn.textContent = 'Update Data';
-                cancelEditBtn.classList.remove('hidden');
-                document.getElementById('edit-id').value = item.id;
-                document.getElementById('email').value = item.email;
-                document.getElementById('whatsapp').value = item.whatsapp;
-                document.getElementById('referral').value = item.referral;
-                document.getElementById('kategori').value = item.kategori;
-                document.getElementById('week').value = item.week;
-                document.getElementById('day').value = item.day;
-                
-                document.getElementById('referral').readOnly = true;
-                document.getElementById('week').disabled = true;
-                document.getElementById('day').disabled = true;
-                
-                adminForm.scrollIntoView({ behavior: 'smooth' });
-            }
+async function deleteByEmail(email){
+  if(!confirm(`Hapus ${email} ?`)) return;
+  const latest = await fetchLatest();
+  const idx = latest.findIndex(d => (d.email||'').toLowerCase() === (email||'').toLowerCase());
+  if(idx === -1) return alert('Data tidak ditemukan (mungkin sudah dihapus).');
+  latest.splice(idx,1);
+  await putAll(latest);
+  loadAll();
+}
 
-            function handleDelete(id) {
-                deleteId = id;
-                confirmModalOverlay.classList.remove('hidden');
-            }
+/* ========== Bulk identify & update ========== */
+identifyBtn.addEventListener('click', async ()=>{
+  const list = bulkInput.value.split(/\r?\n/).map(s=>s.trim().toLowerCase()).filter(Boolean);
+  if(!list.length) return alert('Masukkan email dulu');
+  const latest = await fetchLatest();
+  const allEmails = latest.map(d => (d.email||'').toLowerCase());
+  const found = [], notfound = [];
+  list.forEach(e => (allEmails.includes(e) ? found.push(e) : notfound.push(e)));
+  identifyResult.innerHTML = `<div><strong>Ditemukan (${found.length}):</strong><br>${found.join('<br>')||'-'}</div>
+                              <div style="margin-top:8px"><strong>Tidak ditemukan (${notfound.length}):</strong><br>${notfound.join('<br>')||'-'}</div>`;
+});
 
-            async function performDelete() {
-                if (!deleteId) return;
-                const updatedData = allData.filter(d => d.id.toString() !== deleteId.toString());
-                confirmModalOverlay.classList.add('hidden');
-                await saveData(updatedData, 'dihapus');
-                deleteId = null;
-            }
-            
-            function resetForm() {
-                adminForm.reset();
-                document.getElementById('edit-id').value = '';
-                formTitle.textContent = 'Tambah Data Baru';
-                submitBtn.textContent = 'Tambah Data';
-                cancelEditBtn.classList.add('hidden');
+bulkUpdateBtn.addEventListener('click', async ()=>{
+  const list = bulkInput.value.split(/\r?\n/).map(s=>s.trim().toLowerCase()).filter(Boolean);
+  if(!list.length) return alert('Masukkan email yang akan diubah (satu per baris).');
+  const newStatus = bulkStatusSelect.value || 'New Acc';
+  const latest = await fetchLatest();
+  let changed = 0;
+  const updated = latest.map(d=>{
+    if(list.includes((d.email||'').toLowerCase())){
+      changed++;
+      return { ...d, statusAcc: newStatus };
+    }
+    return d;
+  });
+  if(changed === 0) return alert('Tidak ada email yang cocok untuk diubah.');
+  await putAll(updated);
+  alert(`Status diubah untuk ${changed} email.`);
+  loadAll();
+});
 
-                document.getElementById('referral').readOnly = false;
-                document.getElementById('week').disabled = false;
-                document.getElementById('day').disabled = false;
-            }
+bulkResetBtn.addEventListener('click', ()=>{
+  bulkInput.value=''; identifyResult.innerHTML='';
+});
 
-            async function fetchData() {
-                cardContainer.innerHTML = '<p class="text-center p-8 text-slate-500">Memuat data...</p>';
-                try {
-                    const response = await fetch(`${JSONBIN_URL}/latest`, { headers: { 'X-Master-Key': JSONBIN_API_KEY } });
-                    if (!response.ok && response.status !== 404) throw new Error(`HTTP error! status: ${response.status}`);
-                    allData = (response.status === 404) ? [] : (await response.json()).record.data || [];
-                    renderCards(allData, searchInput.value);
-                    renderAdminCards(allData);
-                } catch (error) {
-                    console.error("Error fetching data:", error);
-                    allData = [];
-                    cardContainer.innerHTML = `<p class="text-center p-8 text-red-500">Gagal memuat data.</p>`;
-                }
-            }
-            
-            async function saveData(data, action = 'disimpan') {
-                const btn = document.getElementById('edit-id').value ? submitBtn : bulkUpdateBtn.disabled ? bulkUpdateBtn : submitBtn;
-                btn.disabled = true;
+/* ========== Misc handlers ========== */
+reloadBtn.addEventListener('click', loadAll);
+searchInput.addEventListener('input', applySearch);
 
-                try {
-                    const putRes = await fetch(JSONBIN_URL, {
-                        method: 'PUT',
-                        headers: { 'Content-Type': 'application/json', 'X-Master-Key': JSONBIN_API_KEY, 'X-Bin-Versioning': 'false' },
-                        body: JSON.stringify({ data: data })
-                    });
-                    if (!putRes.ok) throw new Error('Could not save data.');
-                    
-                    showToast(`Data berhasil ${action}!`, false);
-                    allData = data;
-                    renderCards(allData, searchInput.value);
-                    renderAdminCards(allData);
-                    resetForm();
-                } catch (error) {
-                    console.error('Error saving data:', error);
-                    showToast(`Gagal menyimpan data: ${error.message}`, true);
-                } finally {
-                   btn.disabled = false;
-                }
-            }
+/* ========== Initial load ========== */
+loadAll();
 
-            async function handleBulkUpdate() {
-                const emailsText = bulkEmailsInput.value.trim();
-                if (!emailsText) {
-                    bulkUpdateResults.innerHTML = `<p class="text-red-600 font-medium">Silakan masukkan daftar email.</p>`;
-                    bulkUpdateResults.classList.remove('hidden');
-                    return;
-                }
-                bulkUpdateBtn.disabled = true;
-                bulkUpdateBtn.textContent = 'Memproses...';
-
-                const action = bulkKategoriSelect.value;
-                const emailsToProcess = new Set(emailsText.split(/[\s,;\n]+/).filter(e => e).map(e => e.toLowerCase()));
-                const foundItems = [];
-                
-                const modifiedData = allData.map(item => {
-                    const currentEmailLower = item.email.toLowerCase();
-                    if (emailsToProcess.has(currentEmailLower)) {
-                        if (action !== 'identify_only') {
-                            item.kategori = action;
-                        }
-                        foundItems.push(item);
-                    }
-                    return item;
-                });
-
-                let summaryMessage = '';
-                if (action !== 'identify_only') {
-                    await saveData(modifiedData, `${foundItems.length} data diperbarui via update massal`);
-                    summaryMessage = `<p class="font-bold text-green-600 mb-2">${foundItems.length} email ditemukan dan diubah ke "${action}".</p>`;
-                } else {
-                    summaryMessage = `<p class="font-bold text-blue-600 mb-2">${foundItems.length} email ditemukan di database:</p>`;
-                }
-                
-                if (foundItems.length > 0) {
-                    let tableHTML = `
-                        <div class="overflow-x-auto">
-                            <table class="admin-table w-full text-sm">
-                                <thead>
-                                    <tr>
-                                        <th>Email</th>
-                                        <th>Kategori</th>
-                                        <th>Aksi</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    ${foundItems.map(item => `
-                                        <tr>
-                                            <td class="break-all">${item.email}</td>
-                                            <td>${item.kategori}</td>
-                                            <td>
-                                                <button class="action-btn edit-btn p-2 bulk-result-edit-btn" data-id="${item.id}" title="Edit">
-                                                    <i class="fas fa-pencil-alt"></i>
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    `).join('')}
-                                </tbody>
-                            </table>
-                        </div>
-                    `;
-                    bulkUpdateResults.innerHTML = summaryMessage + tableHTML;
-                    bulkUpdateResults.querySelectorAll('.bulk-result-edit-btn').forEach(button => {
-                        button.addEventListener('click', () => {
-                            const itemId = button.dataset.id;
-                            handleEdit(itemId);
-                        });
-                    });
-                } else {
-                     bulkUpdateResults.innerHTML = `<p class="font-medium text-slate-600">Tidak ada email yang cocok ditemukan.</p>`;
-                }
-                
-                bulkUpdateResults.classList.remove('hidden');
-                bulkEmailsInput.value = '';
-                bulkUpdateBtn.disabled = false;
-                bulkUpdateBtn.textContent = 'Proses';
-            }
-
-            adminForm.addEventListener('submit', async function(e) {
-                e.preventDefault();
-                const editId = document.getElementById('edit-id').value;
-                let updatedData, action;
-
-                if (editId) {
-                    action = 'diperbarui';
-                    updatedData = allData.map(item => {
-                        if (item.id.toString() === editId) {
-                            return {
-                                ...item,
-                                email: document.getElementById('email').value,
-                                whatsapp: document.getElementById('whatsapp').value,
-                                kategori: document.getElementById('kategori').value,
-                            };
-                        }
-                        return item;
-                    });
-                } else {
-                    action = 'ditambahkan';
-                    const formData = {
-                        id: Date.now(),
-                        timestamp: new Date().toISOString(),
-                        email: document.getElementById('email').value,
-                        whatsapp: document.getElementById('whatsapp').value,
-                        referral: document.getElementById('referral').value,
-                        kategori: document.getElementById('kategori').value,
-                        week: document.getElementById('week').value,
-                        day: document.getElementById('day').value,
-                    };
-                    updatedData = [...allData, formData];
-                }
-                await saveData(updatedData, action);
-            });
-            
-            // --- Event Listeners Utama ---
-            tabelBtn.addEventListener('click', () => switchView('tabel'));
-            adminBtn.addEventListener('click', () => switchView('admin'));
-            logoutBtn.addEventListener('click', () => switchView('tabel'));
-            cancelEditBtn.addEventListener('click', () => resetForm());
-            searchInput.addEventListener('input', () => renderCards(allData, searchInput.value));
-            bulkUpdateBtn.addEventListener('click', handleBulkUpdate);
-
-            // Event listener untuk modal
-            confirmCancelBtn.addEventListener('click', () => confirmModalOverlay.classList.add('hidden'));
-            confirmDeleteBtn.addEventListener('click', performDelete);
-            
-            fetchData();
-        });
-    </script>
+</script>
 </body>
 </html>
-
